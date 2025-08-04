@@ -41,15 +41,29 @@ def process_inputs(audio_filepath, image_filepath):
 iface = gr.Interface(
     fn=process_inputs,
     inputs=[
-        gr.Audio(sources=["microphone"], type="filepath", label="Record your voice"),
-        gr.Image(type="filepath", label="Upload an image (optional)"),
+        gr.Audio(sources=["microphone"], type="filepath", label="Record your Symptoms", elem_id="audio-record"),
+        gr.Image(type="filepath", label="Upload an image of the Condition(optional)", elem_id="image-upload"),
     ],
     outputs=[
-        gr.Textbox(label="Speech to Text"),
-        gr.Textbox(label="Doctor's Response"),
-        gr.Audio(type = "filepath", label="Doctor's Voice Response")
+        gr.Textbox(label="Your Symptoms", elem_id="speech-to-text"),
+        gr.Textbox(label="Doctor's Suggestions", elem_id="doctor-response"),
+        gr.Audio(type = "filepath", label="Doctor's Voice Response", elem_id="doctor-voice")
     ],
-    title="🩺 AI Doctor with Vision and Voice"
+    title="🩺 Smart Medical Assistant: AI Diagnosis with Voice & Image Analysis",
+    #theme="huggingface",
+    description="Talk to the AI doctor and get a diagnosis based on your symptoms and image input.",
+    flagging_mode="never"
 )
 
+# Adding CSS for custom design tweaks (e.g., colors, margins)
+css = """
+    #audio-record { background-color: #f0f8ff; padding: 15px; }
+    #image-upload { background-color: #e0f7fa; padding: 15px; }
+    #speech-to-text { font-size: 1.2em; color: #333; }
+    #doctor-response { font-size: 1.1em; color: #00796b; }
+    #doctor-voice { margin-top: 15px; }
+    .gradio-button { background-color: #00796b; color: white; font-weight: bold; }
+"""
+
+iface.css = css
 iface.launch(debug=True, share=True)
