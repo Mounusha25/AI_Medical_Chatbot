@@ -1,4 +1,5 @@
 import os
+import tempfile
 from gtts import gTTS
 from dotenv import load_dotenv
 from elevenlabs import ElevenLabs
@@ -96,36 +97,70 @@ def text_to_speech_with_elevenlabs(input_text, output_filepath):
         # Silent error handling - no console output  
         pass
     return output_filepath
-#text_to_speech_with_elevenlabs(input_text, output_filepath="elevenlabs_testing_autoplay.mp3")
 
-# Universal function for Hugging Face Spaces compatibility
-def generate_audio(input_text):
-    """Universal audio generation function that works for both local and Spaces"""
+def generate_audio(text_response):
+    """
+    Main function to generate audio from text response
+    Compatible with Hugging Face Spaces
+    """
     try:
-        # Use ElevenLabs for high-quality TTS
+        if not text_response or text_response.strip() == "":
+            return None
+        
+        # Check if ElevenLabs API key is available
+        ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
+        if not ELEVENLABS_API_KEY:
+            print("ElevenLabs API key not found, falling back to gTTS")
+            # Fallback to gTTS
+            try:
+                import tempfile
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+                output_path = temp_file.name
+                temp_file.close()
+                
+                tts = gTTS(text=text_response, lang='en', slow=False)
+                tts.save(output_path)
+                return output_path
+            except Exception as gtts_error:
+                print(f"gTTS fallback failed: {gtts_error}")
+                return None
+        
+        # Create temporary file for audio output
+        import tempfile
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+        output_path = temp_file.name
+        temp_file.close()
+        
+        # Generate audio using ElevenLabs (without autoplay for Spaces)
+        client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
         audio = client.text_to_speech.convert(
-            text=input_text,
+            text=text_response,
             voice_id="O7p2vmz2iEYgMXxkbsif",
             output_format="mp3_22050_32",
             model_id="eleven_turbo_v2"
         )
         
-        # For Spaces, return audio bytes directly instead of saving to file
-        audio_bytes = b''.join(chunk for chunk in audio)
+        # Save audio to file
+        with open(output_path, "wb") as f:
+            for chunk in audio:
+                f.write(chunk)
         
-        # Save to temporary file for Gradio
-        temp_file = "temp_audio.mp3"
-        with open(temp_file, "wb") as f:
-            f.write(audio_bytes)
+        return output_path
         
-        return temp_file
     except Exception as e:
-        # Fallback to gTTS if ElevenLabs fails
+        print(f"Audio generation error: {e}")  # For debugging in Spaces
+        # Final fallback to gTTS
         try:
-            from gtts import gTTS
-            tts = gTTS(text=input_text, lang='en', slow=False)
-            temp_file = "temp_audio_gtts.mp3"
-            tts.save(temp_file)
-            return temp_file
-        except:
+            import tempfile
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+            output_path = temp_file.name
+            temp_file.close()
+            
+            tts = gTTS(text=text_response, lang='en', slow=False)
+            tts.save(output_path)
+            return output_path
+        except Exception as final_error:
+            print(f"Final fallback failed: {final_error}")
             return None
+
+#text_to_speech_with_elevenlabs(input_text, output_filepath="elevenlabs_testing_autoplay.mp3")

@@ -61,3 +61,21 @@ def transcribe_with_groq(stt_model, audio_filepath, GROQ_API_KEY):
 
     return transcription.text
 #transcribe_with_groq(stt_model, audio_filepath, GROQ_API_KEY)
+
+# Universal function for Hugging Face Spaces compatibility
+def get_audio_text(audio_filepath):
+    """Universal audio transcription function that works for both local and Spaces"""
+    try:
+        # Use GROQ API for transcription
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        
+        with open(audio_filepath, "rb") as audio_file:
+            transcription = client.audio.transcriptions.create(
+                model="whisper-large-v3",
+                file=audio_file,
+                language="en"
+            )
+        
+        return transcription.text
+    except Exception as e:
+        return "Sorry, I couldn't transcribe the audio. Please try recording again."
